@@ -58,3 +58,22 @@ val mk_smtlib2 : Z3.context -> string -> ((Z3.FuncDecl.func_decl * Z3.Symbol.sym
     They must be either below the bottom of the stack or above the initial
     stack pointer. *)
 val construct_pointer_constraint : Constr.z3_expr list -> Env.t -> (Constr.z3_expr list) option -> Env.t option -> Constr.t
+
+(** [mk_and] is a slightly optimized version of [Bool.mk_and] that does not produce an 
+    [and] node if the number of operands is less than 2. This may improve sharing,
+    but also improves compatibility of smtlib2 expressions with other solvers.  *)
+
+val mk_and : Z3.context -> Constr.z3_expr list -> Constr.z3_expr
+
+(** [check_external] invokes an external smt solver as a process. It communicates to the 
+    process via a fairly rigid interpretation of the smtlib2 protocol. It extracts the 
+    smtlib2 query string from the given z3_solver, queries the external solver, receives 
+    a counter model if SAT. It then asserts this model back to the z3_solver, which should
+    check quickly. This solver can then be used with the regular cbat z3 model 
+    interpretation machinery. Tested with boolector, results with other solvers may vary.*)
+
+val check_external : Z3.Solver.solver
+  -> string
+  -> Z3.context
+  -> (Z3.FuncDecl.func_decl * Z3.Symbol.symbol) list
+  -> Z3.Solver.status

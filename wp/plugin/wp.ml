@@ -180,6 +180,9 @@ let stack_size = Cmd.parameter Typ.(some int) "stack-size"
     ~doc:{|Sets the size of the stack, which should be denoted in bytes. By
            default, the size of the stack is 0x800000 which is 8MB.|}
 
+let ext_solver_path = Cmd.parameter Typ.(some string) "ext-solver-path"
+    ~doc:{|Path of external smt solver to call. Boolector recommended. |}
+
 let grammar = Cmd.(
     args
     $ func
@@ -200,7 +203,8 @@ let grammar = Cmd.(
     $ show
     $ stack_base
     $ stack_size
-    $ files)
+    $ files
+    $ ext_solver_path)
 
 (* The callback run when the command is invoked from the command line. *)
 let callback
@@ -223,6 +227,7 @@ let callback
     (stack_base : int option)
     (stack_size : int option)
     (files : string list)
+    (ext_solver_path : string option)
     (ctxt : ctxt) =
   let params = Parameters.({
       func = func;
@@ -242,7 +247,8 @@ let callback
       debug = debug;
       show = show;
       stack_base = stack_base;
-      stack_size = stack_size
+      stack_size = stack_size;
+      ext_solver_path = ext_solver_path
     })
   in
   Parameters.validate params files >>= fun () ->

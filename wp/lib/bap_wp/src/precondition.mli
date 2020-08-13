@@ -295,6 +295,7 @@ val check
   : ?refute:bool
   -> ?print_constr: (string list)
   -> ?debug: (bool)
+  -> ?ext_solver : (string * ((Z3.FuncDecl.func_decl * Z3.Symbol.symbol) list)) 
   -> Z3.Solver.solver
   -> Z3.context
   -> Constr.t
