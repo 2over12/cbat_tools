@@ -38,6 +38,7 @@ type t = {
   postcond : string;
   trip_asserts : bool;
   check_null_derefs : bool;
+  check_invalid_derefs : bool;
   compare_func_calls : bool;
   compare_post_reg_values : string list;
   pointer_reg_list : string list;
@@ -81,3 +82,7 @@ val validate_compare_func_calls : bool -> string list -> (unit, error) result
     Returns an error otherwise. *)
 val validate_compare_post_reg_vals :
   string list -> string list -> (unit, error) result
+
+(** [validate_check_invalid_derefs flag files] checks that the flag is only set
+    when there are two files to compare. Returns an error otherwise. *)
+val validate_check_invalid_derefs : bool -> string list -> (unit, error) result

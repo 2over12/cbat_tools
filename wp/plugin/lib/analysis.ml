@@ -39,11 +39,9 @@ type combined_pre = {
 (* If an offset is specified, generates a function of the address of a memory
    read in the original binary to the address plus an offset in the modified
    binary. *)
-let get_mem_offsets (ctx : Z3.context) (p : Params.t) (file1 : string)
-    (file2 : string) : Constr.z3_expr -> Constr.z3_expr =
+let get_mem_offsets (ctx : Z3.context) (p : Params.t) (syms_orig : Symbol.t list)
+    (syms_mod : Symbol.t list) : Constr.z3_expr -> Constr.z3_expr =
   if p.mem_offset then
-    let syms_orig = Symbol.get_symbols file1 in
-    let syms_mod = Symbol.get_symbols file2 in
     Symbol.offset_constraint ~orig:syms_orig ~modif:syms_mod ctx
   else
     fun addr -> addr
@@ -51,25 +49,39 @@ let get_mem_offsets (ctx : Z3.context) (p : Params.t) (file1 : string)
 (* Generate the exp_conds for the original binary based on the flags passed in
    from the CLI. Generating the memory offsets requires the environment of
    the modified binary. *)
-let exp_conds_orig (p : Params.t) (env_mod : Env.t) (file1 : string)
-    (file2 : string) : Env.exp_cond list =
+let exp_conds_orig (p : Params.t) (env_mod : Env.t) (syms_orig : Symbol.t list)
+    (syms_mod : Symbol.t list) : Env.exp_cond list =
   let ctx = Env.get_context env_mod in
   let offsets =
-    get_mem_offsets ctx p file1 file2
+    get_mem_offsets ctx p syms_orig syms_mod
     |> Pre.mem_read_offsets env_mod
   in
-  if p.check_null_derefs then
-    [Pre.non_null_load_assert; Pre.non_null_store_assert; offsets]
-  else
-    [offsets]
+  let null_derefs =
+    if p.check_null_derefs then
+      [Pre.non_null_load_assert; Pre.non_null_store_assert]
+    else []
+  in
+  let invalid_derefs =
+    if p.check_invalid_derefs then
+      [Pre.valid_load_assert; Pre.valid_store_assert]
+    else []
+  in
+  offsets :: null_derefs @ invalid_derefs
 
 (* Generate the exp_conds for the modified binary based on the flags passed in
    from the CLI. *)
 let exp_conds_mod (p : Params.t) : Env.exp_cond list =
-  if p.check_null_derefs then
-    [Pre.non_null_load_vc; Pre.non_null_store_vc]
-  else
-    []
+  let null_derefs =
+    if p.check_null_derefs then
+      [Pre.non_null_load_vc; Pre.non_null_store_vc]
+    else []
+  in
+  let invalid_derefs =
+    if p.check_invalid_derefs then
+      [Pre.valid_load_vc; Pre.valid_store_vc]
+    else []
+  in
+  null_derefs @ invalid_derefs
 
 (* Determine which function specs to use in WP. *)
 let fun_specs (p : Params.t) (to_inline : Sub.t Seq.t)
@@ -265,6 +277,8 @@ let comparative (bap_ctx : ctxt) (z3_ctx : Z3.context) (var_gen : Env.var_gen)
       ~loader:Utils.loader ~filepath:file1 in
   let prog2, arch2 = Utils.read_program bap_ctx
       ~loader:Utils.loader ~filepath:file2 in
+  let syms1 = Symbol.get_symbols file1 in
+  let syms2 = Symbol.get_symbols file2 in
   let subs1 = Term.enum sub_t prog1 in
   let subs2 = Term.enum sub_t prog2 in
   let main_sub1 = Utils.find_func_err subs1 p.func in
@@ -294,7 +308,7 @@ let comparative (bap_ctx : ctxt) (z3_ctx : Z3.context) (var_gen : Env.var_gen)
   let env1, pointer_vars_1 =
     let to_inline1 = Utils.match_inline p.inline subs1 in
     let specs1 = fun_specs p to_inline1 in
-    let exp_conds1 = exp_conds_orig p env2 file1 file2 in
+    let exp_conds1 = exp_conds_orig p env2 syms1 syms2 in
     let env1 = Pre.mk_env z3_ctx var_gen
         ~subs:subs1
         ~arch:arch1
