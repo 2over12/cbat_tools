@@ -56,6 +56,8 @@ let unit_tests = [
 
   "Diff stack values"              >: test_plugin "memory_samples/diff_stack" sat;
 
+  "Memory hooks"                   >: test_plugin "memory_samples/mem_hooks" sat;
+
   "Name matching"                  >: test_plugin "memory_samples/name_matching" unsat;
 
   "No position independent"        >: test_plugin "no_position_independent" sat;
