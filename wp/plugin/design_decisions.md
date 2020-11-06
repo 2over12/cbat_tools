@@ -20,9 +20,13 @@
 - Loop invariants are not computed, we unroll the loops a set number
   of times (default 5, but user-configurable). See the relevant
   section.
-  
-  
-  
+
+- Our memory model assumes that the valid region of memory contains addresses
+  above the stack pointer and 0x256 below the lowest address of the stack. The
+  stack grows downward in this case.
+
+
+
 ## Loop Unrolling ##
 
 It is not entirely obvious how to unroll loops in an unstructured
