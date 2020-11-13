@@ -47,6 +47,7 @@ type t = {
   debug : string list;
   stack_base : int option;
   stack_size : int option;
+  user_func_spec : (string * string * string) option;
   show : string list
 }
 
