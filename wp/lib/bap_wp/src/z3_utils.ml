@@ -280,7 +280,7 @@ let check_external
     let smt_asserts = asserts_of_model model_string (List.map ~f:Z3.Symbol.to_string syms) in
     let smt_asserts = List.map smt_asserts ~f:(fun assert_ -> 
         Sexp.to_string assert_ |>
-        String.substr_replace_all assert_ ~pattern:pound_token ~with_:"#") in
+        String.substr_replace_all ~pattern:pound_token ~with_:"#") in
     List.iter smt_asserts ~f:(fun smt_assert -> 
         let asts = Z3.SMT.parse_smtlib2_string ctx smt_assert [] [] syms decls  in 
         Z3.Solver.add solver (Z3.AST.ASTVector.to_expr_list asts)

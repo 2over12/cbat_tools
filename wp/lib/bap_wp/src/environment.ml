@@ -67,7 +67,8 @@ type t = {
   stack : mem_range;
   data_section : mem_range;
   init_vars : Constr.z3_expr EnvMap.t;
-  consts : ExprSet.t
+  consts : ExprSet.t;
+  smtlib_compat : bool
 }
 
 and fun_spec_type =
@@ -280,6 +281,7 @@ let mk_env
     ~use_fun_input_regs:(fun_input_regs : bool)
     ~stack_range:(stack_range : mem_range)
     ~data_section_range:(data_section_range : mem_range)
+    ~smtlib_compat:(smtlib_compat : bool)
     (ctx : Z3.context)
     (var_gen : var_gen)
   : t =
@@ -303,7 +305,8 @@ let mk_env
     stack = stack_range;
     data_section = data_section_range;
     init_vars = EnvMap.empty;
-    consts = ExprSet.empty
+    consts = ExprSet.empty;
+    smtlib_compat = smtlib_compat
   }
 
 let env_to_string (env : t) : string =
@@ -423,6 +426,10 @@ let is_x86 (a : Arch.t) : bool =
 
 let use_input_regs (env : t) : bool =
   env.use_fun_input_regs
+
+(** Determine whether to generate constraints that are smtlib compatible or using
+    optimizations that are Z3 specific. Put to [true] if using external smt solver *)
+let get_smtlib_compat (env : t) : bool = env.smtlib_compat
 
 (* Returns a function that takes in a memory address as a z3_expr and outputs a
    z3_expr that checks if that address is within the region of stack we are

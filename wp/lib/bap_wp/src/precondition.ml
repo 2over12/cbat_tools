@@ -39,7 +39,9 @@ type hooks = {
 let z3_expr_zero (ctx : Z3.context) (size : int) : Constr.z3_expr = BV.mk_numeral ctx "0" size
 let z3_expr_one (ctx : Z3.context) (size : int) : Constr.z3_expr = BV.mk_numeral ctx "1" size
 
-let binop (ctx : Z3.context) (b : binop) : Constr.z3_expr -> Constr.z3_expr -> Constr.z3_expr =
+let binop (env : Env.t) (b : binop) : Constr.z3_expr -> Constr.z3_expr -> Constr.z3_expr =
+  let ctx = Env.get_context env in
+  let smtlib_compat = Env.get_smtlib_compat env in
   let open Bap.Std.Bil.Types in
   let zero = z3_expr_zero ctx 1 in
   let one = z3_expr_one ctx 1 in
@@ -57,8 +59,11 @@ let binop (ctx : Z3.context) (b : binop) : Constr.z3_expr -> Constr.z3_expr -> C
   | AND -> BV.mk_and ctx
   | OR -> BV.mk_or ctx
   | XOR -> BV.mk_xor ctx
-  | EQ -> fun x y -> Bool.mk_ite ctx (Bool.mk_eq ctx x y) one zero
-  | NEQ -> fun x y -> Bool.mk_ite ctx (Bool.mk_eq ctx x y) zero one
+  | EQ -> fun x y -> if smtlib_compat then (Bool.mk_ite ctx (Bool.mk_eq ctx x y) one zero)
+    else  (BV.mk_not ctx @@ BV.mk_redor ctx @@ BV.mk_xor ctx x y)
+  | NEQ -> fun x y -> if smtlib_compat 
+    then  Bool.mk_ite ctx (Bool.mk_eq ctx x y) zero one
+    else  BV.mk_redor ctx @@ BV.mk_xor ctx x y
   | LT -> fun x y -> Bool.mk_ite ctx (BV.mk_ult ctx x y) one zero
   | LE -> fun x y -> Bool.mk_ite ctx (BV.mk_ule ctx x y) one zero
   | SLT -> fun x y -> Bool.mk_ite ctx (BV.mk_slt ctx x y) one zero
@@ -221,7 +226,7 @@ let exp_to_z3 (exp : Exp.t) (env : Env.t) : Constr.z3_expr * hooks * Env.t =
         | _ -> x_val, y_val
       in
       assert (get_size x_val = get_size y_val);
-      binop ctx bop x_val y_val, env
+      binop env bop x_val y_val, env
     | UnOp (u, x) ->
       debug "Visiting unop: %s %s%!" (Bil.string_of_unop u) (Exp.to_string x);
       let x_val, env = exp_to_z3_body x env in
@@ -716,11 +721,12 @@ let mk_env
     ?use_fun_input_regs:(use_fun_input_regs = true)
     ?stack_range:(stack_range = default_stack_range)
     ?data_section_range:(data_section_range = default_data_section_range)
+    ?smtlib_compat:(smtlib_compat = false)
     (ctx : Z3.context)
     (var_gen : Env.var_gen)
   : Env.t =
   Env.mk_env ~subs ~specs ~default_spec ~indirect_spec ~jmp_spec ~int_spec ~exp_conds ~num_loop_unroll
-    ~arch ~freshen_vars ~use_fun_input_regs ~stack_range ~data_section_range ctx var_gen
+    ~arch ~freshen_vars ~use_fun_input_regs ~stack_range ~data_section_range ~smtlib_compat ctx var_gen
 
 let visit_jmp (env : Env.t) (post : Constr.t) (jmp : Jmp.t) : Constr.t * Env.t =
   let jmp_spec = Env.get_jmp_handler env in

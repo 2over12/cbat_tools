@@ -51,7 +51,7 @@ val z3_expr_zero : Z3.context -> int -> Constr.z3_expr
 val z3_expr_one : Z3.context -> int -> Constr.z3_expr
 
 (** Translate a BIR binary operator to a Z3 one. *)
-val binop : Z3.context -> Bap.Std.binop -> Constr.z3_expr -> Constr.z3_expr -> Constr.z3_expr
+val binop : Env.t -> Bap.Std.binop -> Constr.z3_expr -> Constr.z3_expr -> Constr.z3_expr
 
 (** Translate a BIR unary operator to a Z3 one. *)
 val unop : Z3.context -> Bap.Std.unop -> Constr.z3_expr -> Constr.z3_expr
@@ -253,6 +253,7 @@ val mk_env
   -> ?use_fun_input_regs:bool
   -> ?stack_range:Env.mem_range
   -> ?data_section_range:Env.mem_range
+  -> ?smtlib_compat:bool
   -> Z3.context
   -> Env.var_gen
   -> Env.t

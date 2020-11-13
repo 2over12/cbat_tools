@@ -121,6 +121,7 @@ val mk_env
   -> use_fun_input_regs:bool
   -> stack_range:mem_range
   -> data_section_range:mem_range
+  -> smtlib_compat:bool
   -> Z3.context
   -> var_gen
   -> t
@@ -252,6 +253,10 @@ val is_x86 : Bap.Std.Arch.t -> bool
 (** Checks to see if the environment supports using all possible input registers
     when generating symbols in the function specs at a function call site. *)
 val use_input_regs : t -> bool
+
+(** Determine whether to generate constraints that are smtlib compatible or using
+    optimizations that are Z3 specific. Put to [true] if using external smt solver *)
+val get_smtlib_compat : t -> bool
 
 (** [in_stack env addr] is the constraint [STACK_MIN < addr <= STACK_MAX] as
     defined by the concrete range of the stack in the env. *)
