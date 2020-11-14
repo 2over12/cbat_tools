@@ -34,7 +34,7 @@ let autorun_passes (proj : Project.t) : Project.t =
 let create_proj (state : Project.state option) (loader : string)
     (filename : string) : Project.t =
   let input = Project.Input.file ~loader ~filename in
-  match Project.create ~package:filename ?state input with
+  match Project.create ?state input with
   | Ok proj -> autorun_passes proj
   | Error e ->
     let msg = Error.to_string_hum e in
